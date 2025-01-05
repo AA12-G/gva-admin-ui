@@ -15,4 +15,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  optimizeDeps: {
+    include: [
+      '@ant-design/icons-vue',
+      'ant-design-vue',
+      'ant-design-vue/es',
+      '@ant-design/icons-vue/lib/icons'
+    ]
+  }
 })
