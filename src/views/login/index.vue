@@ -2,23 +2,30 @@
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { login } from '@/api/user'
+import type { LoginParams } from '@/api/user'
 
 const router = useRouter()
 
-const loginForm = reactive({
+const loginForm = reactive<LoginParams>({
   username: '',
   password: ''
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!loginForm.username || !loginForm.password) {
     message.error('请输入用户名和密码')
     return
   }
-  // 这里添加登录逻辑
-  localStorage.setItem('token', 'dummy-token')
-  message.success('登录成功')
-  router.push('/')
+  
+  try {
+    const res = await login(loginForm)
+    localStorage.setItem('token', res.token)
+    message.success('登录成功')
+    router.push('/')
+  } catch (error: any) {
+    message.error(error.message || '登录失败')
+  }
 }
 </script>
 

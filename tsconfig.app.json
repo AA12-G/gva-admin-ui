@@ -7,7 +7,7 @@
     "composite": true,
     "incremental": true,
     "baseUrl": ".",
-    "types": ["node", "vue-router", "ant-design-vue/typings/global"],
+    "types": ["node", "vue-router", "ant-design-vue/typings/global", "axios"],
     "paths": {
       "@/*": ["./src/*"]
     }
