@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Layout from '@/layout/index.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +12,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'layout',
-      component: () => import('../layout/index.vue'),
+      component: Layout,
       redirect: '/dashboard',
       children: [
         {
@@ -22,6 +23,24 @@ const router = createRouter({
             title: '仪表盘',
             icon: 'dashboard'
           }
+        },
+        {
+          path: 'users',
+          name: 'users',
+          component: () => import('../views/users/index.vue'),
+          meta: {
+            title: '用户管理',
+            icon: 'user'
+          }
+        },
+        {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('../views/settings/index.vue'),
+          meta: {
+            title: '系统设置',
+            icon: 'setting'
+          }
         }
       ]
     }
@@ -29,7 +48,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to: any, from: any, next: any) => {
+router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   if (to.path === '/login') {
     next()

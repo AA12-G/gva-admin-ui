@@ -1,20 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { message, Modal } from 'ant-design-vue'
 import {
   DashboardOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  LogoutOutlined
-} from '@ant-design/icons-vue/lib/icons'
+  LogoutOutlined,
+  UserOutlined,
+  SettingOutlined,
+  FileOutlined
+} from '@ant-design/icons-vue'
 
 const router = useRouter()
+const route = useRoute()
+const userStore = useUserStore()
 const isCollapse = ref(false)
 
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  router.push('/login')
+const iconMap = {
+  dashboard: DashboardOutlined,
+  user: UserOutlined,
+  setting: SettingOutlined,
+  file: FileOutlined
 }
+
+const routes = computed(() => {
+  const mainRoute = router.options.routes.find(r => r.path === '/')
+  return mainRoute?.children || []
+})
+
+onMounted(async () => {
+  if (!userStore.userInfo) {
+    await userStore.fetchUserInfo()
+  }
+})
+
+const handleLogout = () => {
+  Modal.confirm({
+    title: '确认退出',
+    content: '您确定要退出登录吗？',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      localStorage.removeItem('token')
+      userStore.clearUserInfo()
+      message.success('退出登录成功')
+      router.push('/login')
+    }
+  })
+}
+
+const displayName = computed(() => {
+  return userStore.userInfo?.username || '未知用户'
+})
 </script>
 
 <template>
@@ -26,19 +65,21 @@ const handleLogout = () => {
       collapsible
     >
       <div class="logo">
-        <h2>{{ isCollapse ? '后台' : '后台管理系统' }}</h2>
+        <h2>{{ isCollapse ? 'GVA' : 'GVA Admin' }}</h2>
       </div>
       <a-menu
         theme="dark"
         mode="inline"
         :selected-keys="[$route.path]"
       >
-        <a-menu-item key="/dashboard">
-          <template #icon>
-            <DashboardOutlined />
-          </template>
-          <router-link to="/dashboard">仪表盘</router-link>
-        </a-menu-item>
+        <template v-for="route in routes" :key="route.path">
+          <a-menu-item v-if="!route.hidden" :key="'/' + route.path">
+            <template #icon>
+              <component :is="iconMap[route.meta?.icon]" />
+            </template>
+            <router-link :to="'/' + route.path">{{ route.meta?.title }}</router-link>
+          </a-menu-item>
+        </template>
       </a-menu>
     </a-layout-sider>
     
@@ -53,13 +94,23 @@ const handleLogout = () => {
         <div class="header-right">
           <a-dropdown>
             <a class="user-dropdown" @click.prevent>
-              <a-avatar>User</a-avatar>
-              <span class="username">Admin</span>
+              <a-avatar :src="userStore.userInfo?.avatar">
+                {{ !userStore.userInfo?.avatar ? displayName.charAt(0).toUpperCase() : '' }}
+              </a-avatar>
+              <span class="username">{{ displayName }}</span>
             </a>
             <template #overlay>
               <a-menu>
+                <a-menu-item>
+                  <template #icon>
+                    <UserOutlined />
+                  </template>
+                  <span>个人信息</span>
+                </a-menu-item>
                 <a-menu-item @click="handleLogout">
-                  <LogoutOutlined />
+                  <template #icon>
+                    <LogoutOutlined />
+                  </template>
                   <span>退出登录</span>
                 </a-menu-item>
               </a-menu>
@@ -88,6 +139,7 @@ const handleLogout = () => {
   color: white;
   font-size: 16px;
   overflow: hidden;
+  background: #001529;
 }
 
 .header {
@@ -117,6 +169,8 @@ const handleLogout = () => {
 
 .username {
   margin-left: 8px;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
 }
 
 .content {
@@ -125,5 +179,10 @@ const handleLogout = () => {
   background: #fff;
   height: calc(100vh - 100px);
   overflow: auto;
+}
+
+:deep(.ant-avatar) {
+  background-color: #1677ff;
+  font-size: 14px;
 }
 </style> 
