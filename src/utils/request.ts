@@ -38,7 +38,8 @@ request.interceptors.response.use(
           message.error('没有权限')
           break
         case 404:
-          message.error('请求的资源不存在')
+          // 不显示 404 错误提示，静默失败
+          console.warn('请求的资源不存在:', error.config.url)
           break
         case 500:
           message.error('服务器错误')
@@ -46,6 +47,11 @@ request.interceptors.response.use(
         default:
           message.error(error.response.data.message || '未知错误')
       }
+    } else if (error.code === 'ECONNABORTED') {
+      message.error('请求超时，请稍后重试')
+    } else {
+      // 网络错误等静默失败
+      console.warn('请求失败:', error)
     }
     return Promise.reject(error)
   }

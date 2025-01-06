@@ -9,19 +9,21 @@
     <div class="card-content">
       <div class="value">
         <component :is="iconComponent" :style="{ color }" class="prefix-icon" />
-        {{ prefix }}{{ formatValue(value) }}
+        {{ prefix }}{{ formatValue(value) }}{{ suffix }}
       </div>
       <div class="footer">
-        <span>
-          同比
-          <span :class="['increase', increase >= 0 ? 'up' : 'down']">
-            {{ Math.abs(increase) }}{{ suffix }}
+        <slot name="footer">
+          <span>
+            同比
+            <span :class="['increase', increase >= 0 ? 'up' : 'down']">
+              {{ Math.abs(increase) }}{{ suffix }}
+            </span>
           </span>
-        </span>
-        <span class="trend">
-          <component :is="increase >= 0 ? 'RiseOutlined' : 'FallOutlined'" 
-            :class="increase >= 0 ? 'up' : 'down'" />
-        </span>
+          <span class="trend">
+            <component :is="increase >= 0 ? 'RiseOutlined' : 'FallOutlined'" 
+              :class="increase >= 0 ? 'up' : 'down'" />
+          </span>
+        </slot>
       </div>
     </div>
   </div>

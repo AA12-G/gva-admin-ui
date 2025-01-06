@@ -69,6 +69,7 @@ const handleLogin = async () => {
     
     const res = await login(loginForm)
     localStorage.setItem('token', res.token)
+    userStore.setUserInfo(res.user)
     
     if (rememberPassword.value) {
       savePassword(loginForm.username, loginForm.password)
@@ -76,10 +77,8 @@ const handleLogin = async () => {
       removePassword(loginForm.username)
     }
     
-    userStore.setUserInfo(res.user)
-    
     message.success('登录成功')
-    router.push('/')
+    router.push('/admin/dashboard')
   } catch (error: any) {
     if (error?.message) {
       message.error(error.message)

@@ -25,9 +25,20 @@ const iconMap = {
   file: FileOutlined
 }
 
-const routes = computed(() => {
-  const mainRoute = router.options.routes.find(r => r.path === '/')
-  return mainRoute?.children || []
+const selectedKey = computed(() => {
+  return route.path
+})
+
+const filteredRoutes = computed(() => {
+  const mainRoute = router.options.routes.find(r => r.path === '/admin')
+  const routes = mainRoute?.children || []
+  return routes.filter(route => {
+    // 过滤掉隐藏的菜单
+    if (route.meta?.hidden) return false
+    // 检查权限
+    if (route.meta?.code && !userStore.hasPermission(route.meta.code)) return false
+    return true
+  })
 })
 
 onMounted(async () => {
@@ -70,16 +81,17 @@ const displayName = computed(() => {
       <a-menu
         theme="dark"
         mode="inline"
-        :selected-keys="[$route.path]"
+        :selected-keys="[selectedKey]"
       >
-        <template v-for="route in routes" :key="route.path">
-          <a-menu-item v-if="!route.hidden" :key="'/' + route.path">
-            <template #icon>
-              <component :is="iconMap[route.meta?.icon]" />
-            </template>
-            <router-link :to="'/' + route.path">{{ route.meta?.title }}</router-link>
-          </a-menu-item>
-        </template>
+        <a-menu-item 
+          v-for="route in filteredRoutes" 
+          :key="'/admin/' + route.path"
+        >
+          <template #icon>
+            <component :is="iconMap[route.meta?.icon]" />
+          </template>
+          <router-link :to="'/admin/' + route.path">{{ route.meta?.title }}</router-link>
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
     
@@ -161,10 +173,6 @@ const displayName = computed(() => {
   padding: 0 12px;
   cursor: pointer;
   transition: all 0.3s;
-}
-
-.user-dropdown:hover {
-  background: rgba(0,0,0,0.025);
 }
 
 .username {
