@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { message } from 'ant-design-vue'
 import Layout from '@/layout/index.vue'
 
 const router = createRouter({
@@ -26,8 +25,7 @@ const router = createRouter({
           component: () => import('../views/dashboard/index.vue'),
           meta: {
             title: '仪表盘',
-            icon: 'dashboard',
-            code: 'system:dashboard'
+            icon: 'dashboard'
           }
         },
         {
@@ -36,8 +34,7 @@ const router = createRouter({
           component: () => import('../views/users/index.vue'),
           meta: {
             title: '用户管理',
-            icon: 'user',
-            code: 'system:user'
+            icon: 'user'
           }
         },
         {
@@ -46,8 +43,7 @@ const router = createRouter({
           component: () => import('../views/roles/index.vue'),
           meta: {
             title: '角色管理',
-            icon: 'team',
-            code: 'system:role'
+            icon: 'team'
           }
         },
         {
@@ -56,8 +52,7 @@ const router = createRouter({
           component: () => import('../views/permissions/index.vue'),
           meta: {
             title: '权限管理',
-            icon: 'safety',
-            code: 'system:permission'
+            icon: 'safety'
           }
         },
         {
@@ -66,8 +61,7 @@ const router = createRouter({
           component: () => import('../views/logs/index.vue'),
           meta: {
             title: '操作日志',
-            icon: 'file',
-            code: 'system:log'
+            icon: 'file'
           }
         },
         {
@@ -86,8 +80,7 @@ const router = createRouter({
           component: () => import('../views/settings/index.vue'),
           meta: {
             title: '系统设置',
-            icon: 'setting',
-            code: 'system:setting'
+            icon: 'setting'
           }
         }
       ]
@@ -117,21 +110,14 @@ router.beforeEach(async (to, from, next) => {
     try {
       await userStore.fetchUserInfo()
     } catch (error) {
-      message.error('获取用户信息失败')
+      console.warn('获取用户信息失败')
       localStorage.removeItem('token')
       next('/login')
       return
     }
   }
   
-  // 检查权限（除了个人中心页面）
-  const requiredCode = to.meta?.code
-  if (requiredCode && !userStore.hasPermission(requiredCode)) {
-    message.error('没有访问权限')
-    next('/admin/dashboard')
-    return
-  }
-  
+  // 开发阶段直接放行，不检查权限
   next()
 })
 

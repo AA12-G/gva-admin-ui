@@ -24,9 +24,32 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    return response.data
+    const res = response.data
+    console.log('API响应数据:', {
+      url: response.config.url,
+      data: res
+    })
+    
+    // 登录接口特殊处理
+    if (response.config.url?.includes('/login')) {
+      return res
+    }
+    
+    // 用户信息接口特殊处理
+    if (response.config.url?.includes('/user/info')) {
+      return res
+    }
+    
+    // 其他接口通用处理
+    if (res) {
+      return res
+    }
+
+    message.error(res.msg || '请求失败')
+    return Promise.reject(new Error(res.msg || '请求失败'))
   },
   (error) => {
+    console.error('请求错误:', error)
     if (error.response) {
       switch (error.response.status) {
         case 401:
@@ -35,23 +58,17 @@ request.interceptors.response.use(
           router.push('/login')
           break
         case 403:
-          message.error('没有权限')
+          console.warn('权限不足:', error.config.url)
           break
         case 404:
-          // 不显示 404 错误提示，静默失败
           console.warn('请求的资源不存在:', error.config.url)
           break
         case 500:
           message.error('服务器错误')
           break
         default:
-          message.error(error.response.data.message || '未知错误')
+          message.error(error.response.data?.msg || '请求失败')
       }
-    } else if (error.code === 'ECONNABORTED') {
-      message.error('请求超时，请稍后重试')
-    } else {
-      // 网络错误等静默失败
-      console.warn('请求失败:', error)
     }
     return Promise.reject(error)
   }
