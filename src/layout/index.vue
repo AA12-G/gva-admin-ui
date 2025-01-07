@@ -3,43 +3,32 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { message, Modal } from 'ant-design-vue'
-import {
-  DashboardOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  LogoutOutlined,
-  UserOutlined,
-  SettingOutlined,
-  FileOutlined
-} from '@ant-design/icons-vue'
+import * as Icons from '@ant-design/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const isCollapse = ref(false)
 
-const iconMap = {
-  dashboard: DashboardOutlined,
-  user: UserOutlined,
-  setting: SettingOutlined,
-  file: FileOutlined
-}
+// 获取所有图标组件
+const icons = Icons
 
-const selectedKey = computed(() => {
-  return route.path
-})
+// 获取当前选中的菜单项
+const selectedKey = computed(() => route.path)
 
+// 过滤路由配置
 const filteredRoutes = computed(() => {
   const mainRoute = router.options.routes.find(r => r.path === '/admin')
   const routes = mainRoute?.children || []
   return routes.filter(route => {
-    // 过滤掉隐藏的菜单
     if (route.meta?.hidden) return false
-    // 检查权限
     if (route.meta?.code && !userStore.hasPermission(route.meta.code)) return false
     return true
   })
 })
+
+// 获取显示名称
+const displayName = computed(() => userStore.userInfo?.username || '未知用户')
 
 onMounted(async () => {
   if (!userStore.userInfo) {
@@ -47,6 +36,7 @@ onMounted(async () => {
   }
 })
 
+// 退出登录
 const handleLogout = () => {
   Modal.confirm({
     title: '确认退出',
@@ -61,10 +51,6 @@ const handleLogout = () => {
     }
   })
 }
-
-const displayName = computed(() => {
-  return userStore.userInfo?.username || '未知用户'
-})
 </script>
 
 <template>
@@ -88,7 +74,7 @@ const displayName = computed(() => {
           :key="'/admin/' + route.path"
         >
           <template #icon>
-            <component :is="iconMap[route.meta?.icon]" />
+            <component :is="icons[route.meta?.icon]" />
           </template>
           <router-link :to="'/admin/' + route.path">{{ route.meta?.title }}</router-link>
         </a-menu-item>
@@ -99,8 +85,7 @@ const displayName = computed(() => {
       <a-layout-header class="header">
         <div class="header-left">
           <a-button type="text" @click="isCollapse = !isCollapse">
-            <MenuFoldOutlined v-if="!isCollapse" />
-            <MenuUnfoldOutlined v-else />
+            <component :is="isCollapse ? icons.MenuUnfoldOutlined : icons.MenuFoldOutlined" />
           </a-button>
         </div>
         <div class="header-right">
@@ -115,13 +100,13 @@ const displayName = computed(() => {
               <a-menu>
                 <a-menu-item>
                   <template #icon>
-                    <UserOutlined />
+                    <component :is="icons.UserOutlined" />
                   </template>
                   <span>个人信息</span>
                 </a-menu-item>
                 <a-menu-item @click="handleLogout">
                   <template #icon>
-                    <LogoutOutlined />
+                    <component :is="icons.LogoutOutlined" />
                   </template>
                   <span>退出登录</span>
                 </a-menu-item>
@@ -138,59 +123,51 @@ const displayName = computed(() => {
   </a-layout>
 </template>
 
-<style scoped>
+<style scoped lang="less">
 .layout-container {
-  width: 100%;
-  height: 100vh;
-}
-
-.logo {
-  height: 64px;
-  line-height: 64px;
-  text-align: center;
-  color: white;
-  font-size: 16px;
-  overflow: hidden;
-  background: #001529;
-}
-
-.header {
-  background: #fff;
-  padding: 0 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.user-dropdown {
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.username {
-  margin-left: 8px;
-  color: rgba(0, 0, 0, 0.85);
-  font-weight: 500;
-}
-
-.content {
-  margin: 16px;
-  padding: 16px;
-  background: #fff;
-  height: calc(100vh - 100px);
-  overflow: auto;
-}
-
-:deep(.ant-avatar) {
-  background-color: #1677ff;
-  font-size: 14px;
+  min-height: 100vh;
+  
+  .logo {
+    height: 64px;
+    padding: 16px;
+    color: white;
+    text-align: center;
+    
+    h2 {
+      margin: 0;
+      color: white;
+      font-size: 20px;
+    }
+  }
+  
+  .header {
+    background: #fff;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+    
+    .header-right {
+      .user-dropdown {
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        cursor: pointer;
+        
+        .username {
+          margin-left: 8px;
+          color: rgba(0, 0, 0, 0.85);
+        }
+      }
+    }
+  }
+  
+  .content {
+    margin: 24px;
+    padding: 24px;
+    background: #fff;
+    min-height: 280px;
+  }
 }
 </style> 

@@ -34,7 +34,7 @@ export function login(data: LoginParams) {
 
 // 用户信息接口
 export interface UserInfo {
-  id: number
+  ID: number
   username: string
   nickname: string
   email: string
@@ -42,10 +42,11 @@ export interface UserInfo {
   avatar: string
   status: number
   role: {
-    id: number
+    ID: number
     name: string
     code: string
   }
+  statusLoading?: boolean
 }
 
 // 获取用户信息响应
@@ -107,7 +108,7 @@ export function deleteUser(id: number) {
 export function updateUserStatus(id: number, status: number) {
   return request({
     url: `/users/${id}/status`,
-    method: 'patch',
+    method: 'put',
     data: { status }
   })
 } 

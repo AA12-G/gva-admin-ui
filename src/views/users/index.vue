@@ -46,8 +46,8 @@
         <template #bodyCell="{ column, record }">
           <!-- 状态列 -->
           <template v-if="column.key === 'status'">
-            <a-tag :color="record.status === 1 ? 'success' : 'error'">
-              {{ record.status === 1 ? '正常' : '禁用' }}
+            <a-tag :color="getStatusColor(record.status)">
+              {{ getStatusText(record.status) }}
             </a-tag>
           </template>
           
@@ -190,15 +190,62 @@ const handleTableChange = (pag: TablePaginationConfig) => {
   fetchUserList()
 }
 
+// 获取状态文本
+const getStatusText = (status: number) => {
+  switch (status) {
+    case 1:
+      return '正常'
+    case 2:
+      return '禁用'
+    case 0:
+      return '待审核'
+    default:
+      return '未知'
+  }
+}
+
+// 获取状态标签颜色
+const getStatusColor = (status: number) => {
+  switch (status) {
+    case 1:
+      return 'success'
+    case 2:
+      return 'error'
+    case 0:
+      return 'warning'
+    default:
+      return 'default'
+  }
+}
+
 // 状态变更
 const handleStatusChange = async (record: UserInfo, checked: boolean) => {
+  console.log('当前用户信息:', record)
+
+  const userId = record?.ID
+  if (typeof userId !== 'number') {
+    console.error('用户ID无效:', userId)
+    message.error('无法获取用户ID')
+    return
+  }
+
   try {
-    await updateUserStatus(record.id, checked ? 1 : 0)
-    message.success('状态更新成功')
-    fetchUserList()
+    record.statusLoading = true
+    
+    console.log('正在更新用户状态:', {
+      userId,
+      oldStatus: record.status,
+      newStatus: checked ? 1 : 2
+    })
+    
+    await updateUserStatus(userId, checked ? 1 : 2)
+    message.success(`${checked ? '启用' : '禁用'}成功`)
+    await fetchUserList()
   } catch (error) {
     console.error('更新状态失败:', error)
     message.error('更新状态失败')
+  } finally {
+    record.statusLoading = false
   }
 }
 

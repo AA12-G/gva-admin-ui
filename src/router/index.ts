@@ -1,91 +1,70 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { Router } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import Layout from '@/layout/index.vue'
 
+// 定义路由配置
+const routes = [
+  {
+    path: '/',
+    redirect: '/login'
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/login/index.vue'),
+    meta: {
+      title: '登录'
+    }
+  },
+  {
+    path: '/admin',
+    component: Layout,
+    redirect: '/admin/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'dashboard',
+        component: () => import('../views/dashboard/index.vue'),
+        meta: {
+          title: '仪表盘',
+          icon: 'DashboardOutlined'
+        }
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('../views/users/index.vue'),
+        meta: {
+          title: '用户管理',
+          icon: 'UserOutlined'
+        }
+      },
+      {
+        path: 'roles',
+        name: 'roles',
+        component: () => import('../views/roles/index.vue'),
+        meta: {
+          title: '角色管理',
+          icon: 'TeamOutlined'
+        }
+      },
+      {
+        path: 'permissions',
+        name: 'permissions',
+        component: () => import('../views/permissions/index.vue'),
+        meta: {
+          title: '权限管理',
+          icon: 'SafetyCertificateOutlined'
+        }
+      }
+    ]
+  }
+]
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      redirect: '/login'
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: () => import('../views/login/index.vue')
-    },
-    {
-      path: '/admin',
-      component: Layout,
-      redirect: '/admin/dashboard',
-      children: [
-        {
-          path: 'dashboard',
-          name: 'dashboard',
-          component: () => import('../views/dashboard/index.vue'),
-          meta: {
-            title: '仪表盘',
-            icon: 'dashboard'
-          }
-        },
-        {
-          path: 'users',
-          name: 'users',
-          component: () => import('../views/users/index.vue'),
-          meta: {
-            title: '用户管理',
-            icon: 'user'
-          }
-        },
-        {
-          path: 'roles',
-          name: 'roles',
-          component: () => import('../views/roles/index.vue'),
-          meta: {
-            title: '角色管理',
-            icon: 'team'
-          }
-        },
-        {
-          path: 'permissions',
-          name: 'permissions',
-          component: () => import('../views/permissions/index.vue'),
-          meta: {
-            title: '权限管理',
-            icon: 'safety'
-          }
-        },
-        {
-          path: 'logs',
-          name: 'logs',
-          component: () => import('../views/logs/index.vue'),
-          meta: {
-            title: '操作日志',
-            icon: 'file'
-          }
-        },
-        {
-          path: 'profile',
-          name: 'profile',
-          component: () => import('../views/profile/index.vue'),
-          meta: {
-            title: '个人中心',
-            icon: 'user',
-            hidden: true
-          }
-        },
-        {
-          path: 'settings',
-          name: 'settings',
-          component: () => import('../views/settings/index.vue'),
-          meta: {
-            title: '系统设置',
-            icon: 'setting'
-          }
-        }
-      ]
-    }
-  ]
+  routes: routes
 })
 
 // 路由守卫

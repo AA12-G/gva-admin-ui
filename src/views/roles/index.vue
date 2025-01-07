@@ -1,15 +1,46 @@
 <template>
   <div class="roles-container">
     <a-card title="角色管理">
-      <template #extra>
+      <!-- 搜索和操作工具栏 -->
+      <div class="table-operations">
+        <a-space>
+          <a-input
+            v-model:value="searchForm.name"
+            placeholder="请输入角色名称"
+            style="width: 200px"
+            @pressEnter="handleSearch"
+          />
+          <a-select
+            v-model:value="searchForm.status"
+            placeholder="角色状态"
+            style="width: 120px"
+            allowClear
+          >
+            <a-select-option :value="1">正常</a-select-option>
+            <a-select-option :value="0">禁用</a-select-option>
+          </a-select>
+          <a-button type="primary" @click="handleSearch">
+            <template #icon>
+              <SearchOutlined />
+            </template>
+            搜索
+          </a-button>
+          <a-button @click="handleReset">
+            <template #icon>
+              <ReloadOutlined />
+            </template>
+            重置
+          </a-button>
+        </a-space>
         <a-button type="primary" @click="handleAdd">
           <template #icon>
             <PlusOutlined />
           </template>
           新增角色
         </a-button>
-      </template>
+      </div>
 
+      <!-- 角色列表 -->
       <a-table
         :columns="columns"
         :data-source="roleList"
@@ -19,15 +50,35 @@
         row-key="id"
       >
         <template #bodyCell="{ column, record }">
+          <!-- 状态列 -->
           <template v-if="column.key === 'status'">
             <a-tag :color="record.status === 1 ? 'success' : 'error'">
-              {{ record.status === 1 ? '启用' : '禁用' }}
+              {{ record.status === 1 ? '正常' : '禁用' }}
             </a-tag>
           </template>
-          <template v-else-if="column.key === 'action'">
+          
+          <!-- 数据权限列 -->
+          <template v-if="column.key === 'data_scope'">
+            <a-tag color="blue">{{ record.data_scope }}</a-tag>
+          </template>
+          
+          <!-- 创建时间列 -->
+          <template v-if="column.key === 'created_at'">
+            {{ formatDate(record.created_at) }}
+          </template>
+          
+          <!-- 操作列 -->
+          <template v-if="column.key === 'action'">
             <a-space>
               <a-button type="link" @click="handleEdit(record)">编辑</a-button>
-              <a-button type="link" @click="handlePermission(record)">权限设置</a-button>
+              <a-button type="link" @click="handlePermissions(record)">权限设置</a-button>
+              <a-switch
+                :checked="record.status === 1"
+                :loading="record.statusLoading"
+                checked-children="启用"
+                un-checked-children="禁用"
+                @change="(checked) => handleStatusChange(record, checked)"
+              />
               <a-popconfirm
                 title="确定要删除此角色吗？"
                 @confirm="handleDelete(record)"
@@ -39,89 +90,25 @@
         </template>
       </a-table>
     </a-card>
-
-    <!-- 角色表单弹窗 -->
-    <a-modal
-      v-model:visible="modalVisible"
-      :title="modalTitle"
-      @ok="handleModalOk"
-      @cancel="handleModalCancel"
-    >
-      <a-form
-        ref="formRef"
-        :model="formState"
-        :rules="rules"
-        :label-col="{ span: 4 }"
-        :wrapper-col="{ span: 18 }"
-      >
-        <a-form-item label="角色名称" name="name">
-          <a-input v-model:value="formState.name" placeholder="请输入角色名称" />
-        </a-form-item>
-        <a-form-item label="角色标识" name="code">
-          <a-input v-model:value="formState.code" placeholder="请输入角色标识" />
-        </a-form-item>
-        <a-form-item label="排序号" name="sort">
-          <a-input-number
-            v-model:value="formState.sort"
-            :min="0"
-            :max="999"
-            style="width: 100%"
-          />
-        </a-form-item>
-        <a-form-item label="状态" name="status">
-          <a-switch
-            v-model:checked="formState.status"
-            :checkedValue="1"
-            :unCheckedValue="0"
-            checked-children="启用"
-            un-checked-children="禁用"
-          />
-        </a-form-item>
-        <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="formState.remark" placeholder="请输入备注" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
+import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
 import type { TablePaginationConfig } from 'ant-design-vue'
-import { getRoleList } from '@/api/role'
-import type { RoleItem } from '@/api/role'
+import { SearchOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import dayjs from 'dayjs'
+import { getRoleList, updateRoleStatus, deleteRole, type RoleInfo } from '@/api/role'
 
 const loading = ref(false)
-const roleList = ref<RoleItem[]>([])
-const modalVisible = ref(false)
-const modalTitle = ref('新增角色')
-const currentId = ref<number | null>(null)
+const roleList = ref<RoleInfo[]>([])
 
-// 表单状态
-const formState = reactive({
+// 搜索表单
+const searchForm = reactive({
   name: '',
-  code: '',
-  sort: 0,
-  status: 1,
-  remark: ''
+  status: undefined as number | undefined
 })
-
-// 表单校验规则
-const rules = {
-  name: [
-    { required: true, message: '请输入角色名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
-  ],
-  code: [
-    { required: true, message: '请输入角色标识', trigger: 'blur' },
-    { pattern: /^[A-Z_]+$/, message: '只能包含大写字母和下划线', trigger: 'blur' }
-  ],
-  sort: [
-    { required: true, message: '请输入排序号', trigger: 'blur' }
-  ]
-}
 
 // 分页配置
 const pagination = reactive<TablePaginationConfig>({
@@ -141,64 +128,76 @@ const columns = [
     key: 'name'
   },
   {
-    title: '角色标识',
+    title: '角色编码',
     dataIndex: 'code',
     key: 'code'
   },
   {
-    title: '排序号',
+    title: '数据权限',
+    dataIndex: 'data_scope',
+    key: 'data_scope'
+  },
+  {
+    title: '排序',
     dataIndex: 'sort',
-    key: 'sort',
-    width: 100
+    key: 'sort'
   },
   {
     title: '状态',
     dataIndex: 'status',
-    key: 'status',
-    width: 100
+    key: 'status'
   },
   {
-    title: '备注',
-    dataIndex: 'remark',
-    key: 'remark',
+    title: '描述',
+    dataIndex: 'description',
+    key: 'description',
     ellipsis: true
   },
   {
     title: '创建时间',
     dataIndex: 'created_at',
-    key: 'created_at',
-    width: 180
-  },
-  {
-    title: '更新时间',
-    dataIndex: 'updated_at',
-    key: 'updated_at',
-    width: 180
+    key: 'created_at'
   },
   {
     title: '操作',
     key: 'action',
-    width: 250,
+    width: 300,
     fixed: 'right'
   }
 ]
+
+// 格式化日期
+const formatDate = (date: string) => {
+  return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+}
 
 // 获取角色列表
 const fetchRoleList = async () => {
   loading.value = true
   try {
-    const res = await getRoleList({
-      page: pagination.current,
-      pageSize: pagination.pageSize
-    })
-    // 响应拦截器已经处理了 code 和 msg，这里直接使用数据
-    roleList.value = res.list
-    pagination.total = res.total
+    const data = await getRoleList()
+    roleList.value = data
+    pagination.total = data.length
   } catch (error) {
     console.error('获取角色列表失败:', error)
+    message.error('获取角色列表失败')
   } finally {
     loading.value = false
   }
+}
+
+// 搜索
+const handleSearch = () => {
+  pagination.current = 1
+  fetchRoleList()
+}
+
+// 重置搜索
+const handleReset = () => {
+  searchForm.name = ''
+  searchForm.status = undefined
+  pagination.current = 1
+  fetchRoleList()
 }
 
 // 表格变化处理
@@ -210,83 +209,45 @@ const handleTableChange = (pag: TablePaginationConfig) => {
 
 // 新增角色
 const handleAdd = () => {
-  modalTitle.value = '新增角色'
-  currentId.value = null
-  formState.name = ''
-  formState.code = ''
-  formState.sort = 0
-  formState.status = 1
-  formState.remark = ''
-  modalVisible.value = true
+  message.info('新增角色功能开发中')
 }
 
 // 编辑角色
-const handleEdit = (record: RoleItem) => {
-  modalTitle.value = '编辑角色'
-  currentId.value = record.id
-  formState.name = record.name
-  formState.code = record.code
-  formState.sort = record.sort
-  formState.status = record.status
-  formState.remark = record.remark || ''
-  modalVisible.value = true
+const handleEdit = (record: RoleInfo) => {
+  message.info('编辑角色功能开发中')
+}
+
+// 权限设置
+const handlePermissions = (record: RoleInfo) => {
+  message.info('权限设置功能开发中')
+}
+
+// 状态变更
+const handleStatusChange = async (record: RoleInfo, checked: boolean) => {
+  try {
+    await updateRoleStatus(record.id, checked ? 1 : 0)
+    message.success('状态更新成功')
+    fetchRoleList()
+  } catch (error) {
+    console.error('更新状态失败:', error)
+    message.error('更新状态失败')
+  }
 }
 
 // 删除角色
-const handleDelete = async (record: RoleItem) => {
+const handleDelete = async (record: RoleInfo) => {
   try {
     await deleteRole(record.id)
     message.success('删除成功')
     fetchRoleList()
   } catch (error) {
     console.error('删除失败:', error)
+    message.error('删除失败')
   }
 }
 
-// 权限设置
-const handlePermission = (record: RoleItem) => {
-  message.info('权限设置功能开发中')
-}
-
-// 弹窗确认
-const handleModalOk = async () => {
-  try {
-    if (currentId.value) {
-      // 编辑
-      await updateRole(currentId.value, {
-        name: formState.name,
-        code: formState.code,
-        sort: formState.sort,
-        status: formState.status,
-        remark: formState.remark
-      })
-      message.success('更新成功')
-    } else {
-      // 新增
-      await createRole({
-        name: formState.name,
-        code: formState.code,
-        sort: formState.sort,
-        status: formState.status,
-        remark: formState.remark
-      })
-      message.success('创建成功')
-    }
-    modalVisible.value = false
-    fetchRoleList()
-  } catch (error) {
-    console.error('保存失败:', error)
-  }
-}
-
-// 弹窗取消
-const handleModalCancel = () => {
-  modalVisible.value = false
-}
-
-onMounted(() => {
-  fetchRoleList()
-})
+// 初始化
+fetchRoleList()
 </script>
 
 <style scoped lang="less">
@@ -302,7 +263,13 @@ onMounted(() => {
   .table-operations {
     margin-bottom: 16px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+  }
+
+  :deep(.ant-table-cell) {
+    .ant-tag {
+      margin-right: 0;
+    }
   }
 }
 </style> 
