@@ -80,9 +80,14 @@ const handleLogin = async () => {
     message.success('登录成功')
     router.push('/admin/dashboard')
   } catch (error: any) {
-    if (error?.message) {
-      message.error(error.message)
-    }
+    const errorMsg = error.response?.data?.error || '登录失败'
+    message.error(errorMsg)
+    
+    console.error('登录失败:', {
+      status: error.response?.status,
+      error: error.response?.data?.error,
+      detail: error.response?.data
+    })
   } finally {
     loading.value = false
   }

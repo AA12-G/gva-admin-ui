@@ -111,4 +111,35 @@ export function updateUserStatus(id: number, status: number) {
     method: 'put',
     data: { status }
   })
+}
+
+// 更新用户信息
+export function updateUserProfile(id: number, data: {
+  username: string
+  nickname?: string
+  email?: string
+  phone?: string
+  role_id?: number
+}) {
+  return request({
+    url: `/users/${id}/profile`,
+    method: 'put',
+    data
+  })
+}
+
+// 获取指定用户信息
+export function getUserProfile(id: number) {
+  return request<{
+    user: {
+      username: string
+      nickname: string
+      email: string
+      phone: string
+      role_id: number
+    }
+  }>({
+    url: `/users/${id}/profile`,
+    method: 'get'
+  })
 } 

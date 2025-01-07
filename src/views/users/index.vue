@@ -53,13 +53,42 @@
           
           <!-- 角色列 -->
           <template v-if="column.key === 'role'">
-            <a-tag color="blue">{{ record.role?.name || '超级管理员' }}</a-tag>
+            <a-space>
+              <a-tag 
+                v-if="record.role?.code === 'super_admin'"
+                color="red"
+              >
+                超级管理员
+              </a-tag>
+              <a-tag 
+                v-else-if="record.role?.code === 'admin'"
+                color="blue"
+              >
+                管理员
+              </a-tag>
+              <a-tag 
+                v-else
+                color="green"
+              >
+                普通用户
+              </a-tag>
+            </a-space>
           </template>
           
           <!-- 操作列 -->
           <template v-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" @click="handleEdit(record)">编辑</a-button>
+              <a-button 
+                type="primary" 
+                ghost
+                size="small"
+                @click="handleEdit(record)"
+              >
+                <template #icon>
+                  <EditOutlined />
+                </template>
+                编辑
+              </a-button>
               <a-switch
                 :checked="record.status === 1"
                 :loading="record.statusLoading"
@@ -71,23 +100,77 @@
                 title="确定要删除此用户吗？"
                 @confirm="handleDelete(record)"
               >
-                <a-button type="link" danger>删除</a-button>
+                <a-button 
+                  type="primary" 
+                  danger 
+                  ghost
+                  size="small"
+                >
+                  <template #icon>
+                    <DeleteOutlined />
+                  </template>
+                  删除
+                </a-button>
               </a-popconfirm>
             </a-space>
           </template>
         </template>
       </a-table>
     </a-card>
+
+    <!-- 编辑用户对话框 -->
+    <a-modal
+      v-model:visible="editModalVisible"
+      title="编辑用户"
+      @ok="handleEditSubmit"
+      @cancel="handleEditCancel"
+      :confirmLoading="editLoading"
+    >
+      <a-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editRules"
+        :label-col="{ span: 4 }"
+        :wrapper-col="{ span: 18 }"
+      >
+        <a-form-item label="用户名" name="username">
+          <a-input v-model:value="editForm.username" placeholder="请输入用户名" />
+        </a-form-item>
+        <a-form-item label="昵称" name="nickname">
+          <a-input v-model:value="editForm.nickname" placeholder="请输入昵称" />
+        </a-form-item>
+        <a-form-item label="邮箱" name="email">
+          <a-input v-model:value="editForm.email" placeholder="请输入邮箱" />
+        </a-form-item>
+        <a-form-item label="手机号" name="phone">
+          <a-input v-model:value="editForm.phone" placeholder="请输入手机号" />
+        </a-form-item>
+        <a-form-item label="角色" name="role_id">
+          <a-select v-model:value="editForm.role_id" placeholder="请选择角色">
+            <a-select-option :value="1">
+              <a-tag color="volcano">超级管理员</a-tag>
+            </a-select-option>
+            <a-select-option :value="2">
+              <a-tag color="blue">管理员</a-tag>
+            </a-select-option>
+            <a-select-option :value="3">
+              <a-tag color="cyan">普通用户</a-tag>
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { TablePaginationConfig } from 'ant-design-vue'
-import { getUserList, deleteUser, updateUserStatus } from '@/api/user'
+import { getUserList, deleteUser, updateUserStatus, getUserProfile, updateUserProfile } from '@/api/user'
 import type { UserInfo } from '@/api/user'
+import type { FormInstance } from 'ant-design-vue'
 
 const loading = ref(false)
 const userList = ref<UserInfo[]>([])
@@ -261,9 +344,115 @@ const handleDelete = async (record: UserInfo) => {
   }
 }
 
+// 编辑用户对话框
+const editModalVisible = ref(false)
+const editLoading = ref(false)
+const editFormRef = ref<FormInstance>()
+
+// 编辑表单数据
+const editForm = reactive({
+  id: undefined as number | undefined,
+  username: '',
+  nickname: '',
+  email: '',
+  phone: '',
+  role_id: undefined as number | undefined
+})
+
+// 表单校验规则
+const editRules = {
+  username: [
+    { required: true, message: '请输入用户名' },
+    { min: 2, max: 32, message: '用户名长度必须在2-32个字符之间' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱格式' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式' }
+  ],
+  role_id: [
+    { required: true, message: '请选择角色' }
+  ]
+}
+
 // 编辑用户
-const handleEdit = (record: UserInfo) => {
-  message.info('编辑用户：' + record.username)
+const handleEdit = async (record: UserInfo) => {
+  try {
+    editLoading.value = true
+    
+    // 打印调试信息
+    console.log('获取用户信息:', record.ID)
+    
+    // 先获取用户详细信息
+    const res = await getUserProfile(record.ID)
+    
+    // 填充表单数据
+    editForm.id = record.ID
+    editForm.username = res.user.username
+    editForm.nickname = res.user.nickname
+    editForm.email = res.user.email
+    editForm.phone = res.user.phone
+    editForm.role_id = res.user.role_id
+    
+    // 显示编辑弹窗
+    editModalVisible.value = true
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    message.error('获取用户信息失败')
+  } finally {
+    editLoading.value = false
+  }
+}
+
+// 提交编辑
+const handleEditSubmit = async () => {
+  try {
+    await editFormRef.value?.validate()
+    
+    if (!editForm.id) {
+      message.error('用户ID不存在')
+      return
+    }
+
+    editLoading.value = true
+    
+    // 打印调试信息
+    console.log('正在更新用户信息:', {
+      userId: editForm.id,
+      formData: {
+        username: editForm.username,
+        nickname: editForm.nickname,
+        email: editForm.email,
+        phone: editForm.phone,
+        role_id: editForm.role_id
+      }
+    })
+
+    // 调用更新接口
+    await updateUserProfile(editForm.id, {
+      username: editForm.username,
+      nickname: editForm.nickname || undefined,
+      email: editForm.email || undefined,
+      phone: editForm.phone || undefined,
+      role_id: editForm.role_id
+    })
+    
+    message.success('更新成功')
+    editModalVisible.value = false
+    await fetchUserList() // 刷新列表
+  } catch (error: any) {
+    console.error('更新用户信息失败:', error)
+    message.error(error.response?.data?.error || '更新失败')
+  } finally {
+    editLoading.value = false
+  }
+}
+
+// 取消编辑
+const handleEditCancel = () => {
+  editFormRef.value?.resetFields()
+  editModalVisible.value = false
 }
 
 onMounted(() => {
@@ -285,6 +474,20 @@ onMounted(() => {
     margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
+  }
+}
+
+.ant-btn {
+  padding: 0 8px;
+  
+  .anticon {
+    font-size: 14px;
+  }
+}
+
+:deep(.ant-select-item) {
+  .ant-tag {
+    margin-right: 0;
   }
 }
 </style> 
