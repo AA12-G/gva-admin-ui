@@ -1,6 +1,16 @@
 <template>
   <div class="users-container">
     <a-card title="用户管理">
+      <!-- 标题右侧的新增按钮 -->
+      <template #extra>
+        <a-button type="primary" @click="handleAdd">
+          <template #icon>
+            <PlusOutlined />
+          </template>
+          新增用户
+        </a-button>
+      </template>
+
       <!-- 搜索区域 -->
       <div class="table-operations">
         <a-space>
@@ -19,18 +29,8 @@
             <a-select-option :value="1">正常</a-select-option>
             <a-select-option :value="0">禁用</a-select-option>
           </a-select>
-          <a-button type="primary" @click="handleSearch">
-            <template #icon>
-              <SearchOutlined />
-            </template>
-            搜索
-          </a-button>
-          <a-button @click="handleReset">
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            重置
-          </a-button>
+          <a-button type="primary" @click="handleSearch">搜索</a-button>
+          <a-button @click="handleReset">重置</a-button>
         </a-space>
       </div>
 
@@ -116,60 +116,71 @@
           </template>
         </template>
       </a-table>
-    </a-card>
 
-    <!-- 编辑用户对话框 -->
-    <a-modal
-      v-model:visible="editModalVisible"
-      title="编辑用户"
-      @ok="handleEditSubmit"
-      @cancel="handleEditCancel"
-      :confirmLoading="editLoading"
-    >
-      <a-form
-        ref="editFormRef"
-        :model="editForm"
-        :rules="editRules"
-        :label-col="{ span: 4 }"
-        :wrapper-col="{ span: 18 }"
+      <!-- 新增用户对话框 -->
+      <a-modal
+        v-model:visible="addModalVisible"
+        title="新增用户"
+        @ok="handleAddSubmit"
+        @cancel="handleAddCancel"
+        :confirmLoading="addLoading"
       >
-        <a-form-item label="用户名" name="username">
-          <a-input v-model:value="editForm.username" placeholder="请输入用户名" />
-        </a-form-item>
-        <a-form-item label="昵称" name="nickname">
-          <a-input v-model:value="editForm.nickname" placeholder="请输入昵称" />
-        </a-form-item>
-        <a-form-item label="邮箱" name="email">
-          <a-input v-model:value="editForm.email" placeholder="请输入邮箱" />
-        </a-form-item>
-        <a-form-item label="手机号" name="phone">
-          <a-input v-model:value="editForm.phone" placeholder="请输入手机号" />
-        </a-form-item>
-        <a-form-item label="角色" name="role_id">
-          <a-select v-model:value="editForm.role_id" placeholder="请选择角色">
-            <a-select-option :value="1">
-              <a-tag color="volcano">超级管理员</a-tag>
-            </a-select-option>
-            <a-select-option :value="2">
-              <a-tag color="blue">管理员</a-tag>
-            </a-select-option>
-            <a-select-option :value="3">
-              <a-tag color="cyan">普通用户</a-tag>
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
+        <a-form
+          ref="addFormRef"
+          :model="addForm"
+          :rules="addRules"
+          :label-col="{ span: 4 }"
+          :wrapper-col="{ span: 18 }"
+        >
+          <a-form-item label="用户名" name="username">
+            <a-input v-model:value="addForm.username" placeholder="请输入用户名" />
+          </a-form-item>
+          
+          <a-form-item label="密码" name="password">
+            <a-input-password 
+              v-model:value="addForm.password" 
+              placeholder="请输入密码，不填则默认为123456" 
+            />
+          </a-form-item>
+          
+          <a-form-item label="昵称" name="nickname">
+            <a-input v-model:value="addForm.nickname" placeholder="请输入昵称" />
+          </a-form-item>
+          
+          <a-form-item label="邮箱" name="email">
+            <a-input v-model:value="addForm.email" placeholder="请输入邮箱" />
+          </a-form-item>
+          
+          <a-form-item label="手机号" name="phone">
+            <a-input v-model:value="addForm.phone" placeholder="请输入手机号" />
+          </a-form-item>
+          
+          <a-form-item label="角色" name="role_id">
+            <a-select v-model:value="addForm.role_id" placeholder="请选择角色">
+              <a-select-option :value="1">
+                <a-tag color="volcano">超级管理员</a-tag>
+              </a-select-option>
+              <a-select-option :value="2">
+                <a-tag color="blue">管理员</a-tag>
+              </a-select-option>
+              <a-select-option :value="3">
+                <a-tag color="cyan">普通用户</a-tag>
+              </a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-form>
+      </a-modal>
+    </a-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import type { TablePaginationConfig } from 'ant-design-vue'
-import { getUserList, deleteUser, updateUserStatus, getUserProfile, updateUserProfile } from '@/api/user'
-import type { UserInfo } from '@/api/user'
+import { getUserList, deleteUser, updateUserStatus, getUserProfile, updateUserProfile, createUser } from '@/api/user'
+import type { UserInfo, CreateUserParams } from '@/api/user'
 import type { FormInstance } from 'ant-design-vue'
 
 const loading = ref(false)
@@ -335,7 +346,7 @@ const handleStatusChange = async (record: UserInfo, checked: boolean) => {
 // 删除用户
 const handleDelete = async (record: UserInfo) => {
   try {
-    await deleteUser(record.id)
+    await deleteUser(record.ID)
     message.success('删除成功')
     fetchUserList()
   } catch (error) {
@@ -455,6 +466,91 @@ const handleEditCancel = () => {
   editModalVisible.value = false
 }
 
+// 添加用户相关
+const addModalVisible = ref(false)
+const addLoading = ref(false)
+const addFormRef = ref<FormInstance>()
+const addForm = reactive<CreateUserParams>({
+  username: '',
+  password: '',
+  nickname: '',
+  email: '',
+  phone: '',
+  role_id: undefined
+})
+
+// 添加表单校验规则
+const addRules = {
+  username: [
+    { required: true, message: '请输入用户名' },
+    { min: 2, max: 32, message: '用户名长度必须在2-32个字符之间' }
+  ],
+  password: [
+    { min: 6, max: 32, message: '密码长度必须在6-32个字符之间' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱格式' }
+  ],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式' }
+  ],
+  role_id: [
+    { required: true, message: '请选择角色' }
+  ]
+}
+
+// 打开添加用户对话框
+const handleAdd = () => {
+  addModalVisible.value = true
+}
+
+// 提交添加用户
+const handleAddSubmit = async () => {
+  try {
+    await addFormRef.value?.validate()
+    addLoading.value = true
+    
+    // 构造请求数据
+    const data: CreateUserParams = {
+      username: addForm.username,
+      role_id: addForm.role_id
+    }
+    
+    // 可选字段
+    if (addForm.password) data.password = addForm.password
+    if (addForm.nickname) data.nickname = addForm.nickname
+    if (addForm.email) data.email = addForm.email
+    if (addForm.phone) data.phone = addForm.phone
+
+    // 调用创建用户接口
+    await createUser(data)
+    
+    message.success('创建成功')
+    addModalVisible.value = false
+    addFormRef.value?.resetFields()
+    await fetchUserList()
+  } catch (error: any) {
+    if (error.response?.status === 409) {
+      message.error('用户名已存在')
+    } else if (error.response?.status === 400) {
+      message.error(error.response.data?.error || '参数错误')
+    } else if (error.response?.status === 403) {
+      message.error('权限不足')
+    } else {
+      message.error(error.response?.data?.error || '创建失败')
+    }
+    console.error('创建用户失败:', error)
+  } finally {
+    addLoading.value = false
+  }
+}
+
+// 取消添加用户
+const handleAddCancel = () => {
+  addFormRef.value?.resetFields()
+  addModalVisible.value = false
+}
+
 onMounted(() => {
   fetchUserList()
 })
@@ -489,5 +585,17 @@ onMounted(() => {
   .ant-tag {
     margin-right: 0;
   }
+}
+
+.table-operations {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* 如果需要按钮靠右对齐，可以添加以下样式 */
+.table-operations :deep(.ant-space) {
+  width: 100%;
+  justify-content: flex-start;
 }
 </style> 

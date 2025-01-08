@@ -142,4 +142,23 @@ export function getUserProfile(id: number) {
     url: `/users/${id}/profile`,
     method: 'get'
   })
+}
+
+// 创建用户参数接口
+export interface CreateUserParams {
+  username: string
+  password?: string
+  nickname?: string
+  email?: string
+  phone?: string
+  role_id?: number
+}
+
+// 创建用户
+export function createUser(data: CreateUserParams) {
+  return request({
+    url: '/users',
+    method: 'post',
+    data
+  })
 } 
