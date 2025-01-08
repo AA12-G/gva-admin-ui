@@ -15,10 +15,11 @@
       <div class="table-operations">
         <a-space>
           <a-input
-            v-model:value="searchForm.username"
-            placeholder="请输入用户名"
+            v-model:value="searchForm.keyword"
+            placeholder="请输入搜索关键词"
             style="width: 200px"
             @pressEnter="handleSearch"
+            allowClear
           />
           <a-select
             v-model:value="searchForm.status"
@@ -28,6 +29,7 @@
           >
             <a-select-option :value="1">正常</a-select-option>
             <a-select-option :value="0">禁用</a-select-option>
+            <a-select-option :value="2">待审核</a-select-option>
           </a-select>
           <a-button type="primary" @click="handleSearch">搜索</a-button>
           <a-button @click="handleReset">重置</a-button>
@@ -188,7 +190,7 @@ const userList = ref<UserInfo[]>([])
 
 // 搜索表单
 const searchForm = reactive({
-  username: '',
+  keyword: '',
   status: undefined as number | undefined
 })
 
@@ -247,8 +249,8 @@ const fetchUserList = async () => {
   try {
     const res = await getUserList({
       page: pagination.current || 1,
-      pageSize: pagination.pageSize || 10,
-      username: searchForm.username || undefined,
+      page_size: pagination.pageSize || 10,
+      keyword: searchForm.keyword || undefined,
       status: searchForm.status
     })
 
@@ -271,7 +273,7 @@ const handleSearch = () => {
 
 // 重置搜索
 const handleReset = () => {
-  searchForm.username = ''
+  searchForm.keyword = ''
   searchForm.status = undefined
   pagination.current = 1
   fetchUserList()

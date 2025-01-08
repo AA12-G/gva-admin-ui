@@ -65,9 +65,9 @@ export function getUserInfo() {
 // 用户列表查询参数
 export interface UserListParams {
   page: number
-  pageSize: number
-  username?: string
-  status?: number
+  page_size: number
+  keyword?: string    // 搜索关键词
+  status?: number     // 用户状态：0禁用，1正常，2待审核
 }
 
 // 用户列表响应
@@ -82,17 +82,20 @@ export interface UserListResult {
 
 // 获取用户列表
 export function getUserList(params: UserListParams) {
-  const serverParams = {
-    pageNum: params.page,
-    pageSize: params.pageSize,
-    username: params.username || undefined,
-    status: params.status
-  }
-  
-  return request<UserListResult>({
+  return request<{
+    users: UserInfo[]
+    total: number
+    page: number
+    size: number
+  }>({
     url: '/users',
     method: 'get',
-    params: serverParams
+    params: {
+      page: params.page,
+      page_size: params.page_size,
+      keyword: params.keyword,
+      status: params.status
+    }
   })
 }
 
