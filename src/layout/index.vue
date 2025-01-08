@@ -10,6 +10,15 @@ const route = useRoute()
 const userStore = useUserStore()
 const isCollapse = ref(false)
 
+// 主题切换相关
+const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
+
+const toggleTheme = () => {
+  isDarkMode.value = !isDarkMode.value
+  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+  document.documentElement.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+}
+
 // 获取所有图标组件
 const icons = Icons
 
@@ -65,9 +74,9 @@ const handleLogout = () => {
         <h2>{{ isCollapse ? 'GVA' : 'GVA Admin' }}</h2>
       </div>
       <a-menu
-        theme="dark"
-        mode="inline"
         :selected-keys="[selectedKey]"
+        mode="inline"
+        theme="light"
       >
         <a-menu-item 
           v-for="route in filteredRoutes" 
@@ -84,9 +93,14 @@ const handleLogout = () => {
     <a-layout>
       <a-layout-header class="header">
         <div class="header-left">
-          <a-button type="text" @click="isCollapse = !isCollapse">
-            <component :is="isCollapse ? icons.MenuUnfoldOutlined : icons.MenuFoldOutlined" />
-          </a-button>
+          <a-space>
+            <a-button type="text" @click="isCollapse = !isCollapse">
+              <component :is="isCollapse ? Icons.MenuUnfoldOutlined : Icons.MenuFoldOutlined" />
+            </a-button>
+            <a-button type="text" @click="toggleTheme">
+              <component :is="isDarkMode ? Icons.BulbFilled : Icons.BulbOutlined" />
+            </a-button>
+          </a-space>
         </div>
         <div class="header-right">
           <a-dropdown>
@@ -130,23 +144,47 @@ const handleLogout = () => {
   .logo {
     height: 64px;
     padding: 16px;
-    color: white;
     text-align: center;
+    background: #f5f5f5;
+    border-bottom: 1px solid #f0f0f0;
     
     h2 {
       margin: 0;
-      color: white;
+      color: rgba(0, 0, 0, 0.85);
       font-size: 20px;
     }
   }
   
+  .sidebar {
+    background: #f5f5f5 !important;
+    border-right: 1px solid #f0f0f0;
+    
+    :deep(.ant-menu) {
+      background: #f5f5f5;
+      border-right: none;
+
+      .ant-menu-item {
+        margin: 4px 8px !important;
+        border-radius: 4px;
+
+        &:hover {
+          background-color: #e8e8e8 !important;
+        }
+
+        &-selected {
+          background-color: #e6f4ff !important;
+        }
+      }
+    }
+  }
+  
   .header {
-    background: #fff;
+    background: var(--component-bg);
     padding: 0 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     
     .header-right {
       .user-dropdown {
@@ -157,7 +195,7 @@ const handleLogout = () => {
         
         .username {
           margin-left: 8px;
-          color: rgba(0, 0, 0, 0.85);
+          color: var(--text-color);
         }
       }
     }
@@ -166,8 +204,33 @@ const handleLogout = () => {
   .content {
     margin: 24px;
     padding: 24px;
-    background: #fff;
+    background: var(--component-bg);
     min-height: 280px;
+  }
+}
+
+.header-left {
+  .ant-btn {
+    padding: 0 12px;
+    font-size: 16px;
+    
+    &:hover {
+      color: var(--ant-primary-color);
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+/* 暗黑模式样式 */
+:deep([data-theme='dark']) {
+  .header-left {
+    .ant-btn {
+      color: rgba(255, 255, 255, 0.85);
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+    }
   }
 }
 </style> 

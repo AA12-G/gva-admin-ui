@@ -172,6 +172,47 @@
           </a-form-item>
         </a-form>
       </a-modal>
+
+      <!-- 编辑用户对话框 -->
+      <a-modal
+        v-model:visible="editModalVisible"
+        title="编辑用户"
+        @ok="handleEditSubmit"
+        @cancel="handleEditCancel"
+        :confirmLoading="editLoading"
+      >
+        <a-form
+          ref="editFormRef"
+          :model="editForm"
+          :rules="editRules"
+          :label-col="{ span: 4 }"
+          :wrapper-col="{ span: 18 }"
+        >
+          <a-form-item label="用户名" name="username">
+            <a-input v-model:value="editForm.username" placeholder="请输入用户名" />
+          </a-form-item>
+          
+          <a-form-item label="昵称" name="nickname">
+            <a-input v-model:value="editForm.nickname" placeholder="请输入昵称" />
+          </a-form-item>
+          
+          <a-form-item label="邮箱" name="email">
+            <a-input v-model:value="editForm.email" placeholder="请输入邮箱" />
+          </a-form-item>
+          
+          <a-form-item label="手机号" name="phone">
+            <a-input v-model:value="editForm.phone" placeholder="请输入手机号" />
+          </a-form-item>
+          
+          <a-form-item label="角色" name="role_id">
+            <a-select v-model:value="editForm.role_id" placeholder="请选择角色">
+              <a-select-option :value="1">超级管理员</a-select-option>
+              <a-select-option :value="2">管理员</a-select-option>
+              <a-select-option :value="3">普通用户</a-select-option>
+            </a-select>
+          </a-form-item>
+        </a-form>
+      </a-modal>
     </a-card>
   </div>
 </template>
@@ -198,10 +239,14 @@ const searchForm = reactive({
 const pagination = reactive<TablePaginationConfig>({
   total: 0,
   current: 1,
-  pageSize: 10,
+  pageSize: 5,
   showSizeChanger: true,
   showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条记录`
+  showTotal: (total) => `共 ${total} 条记录`,
+  pageSizeOptions: ['5', '10', '20', '50'],
+  size: 'default',
+  hideOnSinglePage: false,
+  showLessItems: true
 })
 
 // 表格列定义
@@ -248,13 +293,12 @@ const fetchUserList = async () => {
   loading.value = true
   try {
     const res = await getUserList({
-      page: pagination.current || 1,
-      page_size: pagination.pageSize || 10,
+      page: pagination.current,
+      page_size: 5,
       keyword: searchForm.keyword || undefined,
       status: searchForm.status
     })
 
-    console.log('用户列表响应:', res)
     userList.value = res.users
     pagination.total = res.total
   } catch (error) {
@@ -357,12 +401,10 @@ const handleDelete = async (record: UserInfo) => {
   }
 }
 
-// 编辑用户对话框
+// 编辑相关数据
 const editModalVisible = ref(false)
 const editLoading = ref(false)
 const editFormRef = ref<FormInstance>()
-
-// 编辑表单数据
 const editForm = reactive({
   id: undefined as number | undefined,
   username: '',
@@ -372,7 +414,7 @@ const editForm = reactive({
   role_id: undefined as number | undefined
 })
 
-// 表单校验规则
+// 编辑表单校验规则
 const editRules = {
   username: [
     { required: true, message: '请输入用户名' },
@@ -393,11 +435,9 @@ const editRules = {
 const handleEdit = async (record: UserInfo) => {
   try {
     editLoading.value = true
-    
-    // 打印调试信息
     console.log('获取用户信息:', record.ID)
     
-    // 先获取用户详细信息
+    // 获取用户详细信息
     const res = await getUserProfile(record.ID)
     
     // 填充表单数据
@@ -430,18 +470,6 @@ const handleEditSubmit = async () => {
 
     editLoading.value = true
     
-    // 打印调试信息
-    console.log('正在更新用户信息:', {
-      userId: editForm.id,
-      formData: {
-        username: editForm.username,
-        nickname: editForm.nickname,
-        email: editForm.email,
-        phone: editForm.phone,
-        role_id: editForm.role_id
-      }
-    })
-
     // 调用更新接口
     await updateUserProfile(editForm.id, {
       username: editForm.username,
@@ -599,5 +627,21 @@ onMounted(() => {
 .table-operations :deep(.ant-space) {
   width: 100%;
   justify-content: flex-start;
+}
+
+/* 隐藏所有页码按钮 */
+:deep(.ant-pagination-item) {
+  display: none;
+}
+
+/* 只显示当前页码按钮 */
+:deep(.ant-pagination-item-active) {
+  display: inline-block;
+}
+
+/* 优化分页器样式 */
+:deep(.ant-pagination) {
+  margin: 16px 0;
+  text-align: right;
 }
 </style> 
