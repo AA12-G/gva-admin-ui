@@ -3,6 +3,7 @@ import request from '@/utils/request'
 // 角色信息接口
 export interface RoleInfo {
   id: number
+  ID?: number
   name: string
   code: string
   parent_id: number | null
@@ -36,5 +37,29 @@ export function deleteRole(id: number) {
   return request({
     url: `/roles/${id}`,
     method: 'delete'
+  })
+}
+
+// 根据ID获取指定角色信息
+export const getRoleById = async (id: number) => {
+  try {
+    const response = await request({
+      url: `/roles/${id}`,
+      method: 'get'
+    })
+    console.log('获取到的角色详情:', response)
+    return response.data || response
+  } catch (error) {
+    console.error('获取角色信息失败:', error)
+    throw error
+  }
+}
+
+// 更新角色信息
+export function updateRole(id: number, data: Partial<RoleInfo>) {
+  return request({
+    url: `/roles/${id}`,
+    method: 'put',
+    data
   })
 } 
