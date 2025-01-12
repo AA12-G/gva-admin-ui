@@ -65,15 +65,20 @@ export function updateRole(id: number, data: Partial<RoleInfo>) {
 }
 
 // 获取角色权限
-export const getRolePermissions = async (roleId: number) => {
-  try {
-    const response = await request({
-      url: `/roles/${roleId}/permissions`,
-      method: 'get'
-    })
-    return response.data
-  } catch (error) {
-    console.error('获取角色权限失败:', error)
-    throw error
-  }
+export const getRolePermissions = (id: number) => {
+  return request({
+    url: `/roles/${id}/permissions`,
+    method: 'get'
+  })
+}
+
+// 更新角色权限
+export const updateRolePermissions = (roleId: number, permissionIds: number[]) => {
+  return request({
+    url: `/roles/${roleId}/permissions`,
+    method: 'post',
+    data: {
+      permissionIds
+    }
+  })
 } 

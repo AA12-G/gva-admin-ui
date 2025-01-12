@@ -113,11 +113,28 @@
     </a-card>
 
     <!-- 权限设置对话框 -->
-    <permission-dialog
+    <a-modal
       v-model:visible="permissionModalVisible"
-      :role="currentRole"
-      @success="handlePermissionSuccess"
-    />
+      title="分配权限"
+      @ok="handleSavePermissions"
+      @cancel="handleCancelPermissions"
+      :confirmLoading="permissionLoading"
+      width="600px"
+    >
+      <a-spin :spinning="permissionLoading">
+        <a-tree
+          v-model:checkedKeys="checkedPermissionKeys"
+          :tree-data="permissionList"
+          :fieldNames="{
+            title: 'name',
+            key: 'id',
+            children: 'children'
+          }"
+          checkable
+          :defaultExpandAll="true"
+        />
+      </a-spin>
+    </a-modal>
   </div>
 
   <!-- 编辑角色对话框 -->
@@ -174,9 +191,8 @@ import {
   SettingOutlined 
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
-import { getRoleList, deleteRole, getRoleById, updateRole } from '@/api/role'
+import { getRoleList, deleteRole, getRoleById, updateRole, getRolePermissions, updateRolePermissions } from '@/api/role'
 import type { FormInstance } from 'ant-design-vue'
-import PermissionDialog from './components/PermissionDialog.vue'
 
 const loading = ref(false)
 const roleList = ref<RoleInfo[]>([])
@@ -277,20 +293,61 @@ const handleTableChange = (pag: TablePaginationConfig) => {
   fetchRoleList()
 }
 
-// 权限设置相关
+// 权限管理相关
 const permissionModalVisible = ref(false)
+const permissionLoading = ref(false)
 const currentRole = ref<RoleInfo>()
+const permissionList = ref([])
+const checkedPermissionKeys = ref([])
 
 // 打开权限设置对话框
-const handlePermissions = (record: RoleInfo) => {
-  currentRole.value = record
-  permissionModalVisible.value = true
+const handlePermissions = async (record: RoleInfo) => {
+  try {
+    permissionLoading.value = true
+    currentRole.value = record
+    
+    // 获取角色的权限列表
+    const res = await getRolePermissions(record.ID)
+    console.log('获取到的权限数据:', res)
+    
+    // 设置权限树数据和选中的权限
+    permissionList.value = res.permissions || []
+    checkedPermissionKeys.value = res.permissions?.map(p => p.id) || []
+    
+    // 显示对话框
+    permissionModalVisible.value = true
+  } catch (error) {
+    console.error('获取权限列表失败:', error)
+    message.error('获取权限列表失败')
+  } finally {
+    permissionLoading.value = false
+  }
 }
 
-// 权限设置成功回调
-const handlePermissionSuccess = () => {
-  message.success('权限设置成功')
-  fetchRoleList() // 刷新角色列表
+// 保存权限设置
+const handleSavePermissions = async () => {
+  if (!currentRole.value) return
+  
+  try {
+    permissionLoading.value = true
+    await updateRolePermissions(currentRole.value.id, checkedPermissionKeys.value)
+    message.success('权限设置成功')
+    permissionModalVisible.value = false
+    await fetchRoleList() // 刷新角色列表
+  } catch (error) {
+    console.error('保存权限失败:', error)
+    message.error('保存权限失败')
+  } finally {
+    permissionLoading.value = false
+  }
+}
+
+// 取消权限设置
+const handleCancelPermissions = () => {
+  permissionModalVisible.value = false
+  currentRole.value = undefined
+  permissionList.value = []
+  checkedPermissionKeys.value = []
 }
 
 // 删除角色
@@ -469,5 +526,11 @@ fetchRoleList()
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
   }
+}
+
+// 添加权限树的样式
+:deep(.ant-tree) {
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style> 
