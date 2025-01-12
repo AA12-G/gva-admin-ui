@@ -55,26 +55,9 @@
           
           <!-- 角色列 -->
           <template v-if="column.key === 'role'">
-            <a-space>
-              <a-tag 
-                v-if="record.role?.code === 'super_admin'"
-                color="red"
-              >
-                超级管理员
-              </a-tag>
-              <a-tag 
-                v-else-if="record.role?.code === 'admin'"
-                color="blue"
-              >
-                管理员
-              </a-tag>
-              <a-tag 
-                v-else
-                color="green"
-              >
-                普通用户
-              </a-tag>
-            </a-space>
+            <a-tag :color="getRoleTagColor(record.role_id)">
+              {{ getRoleText(record.role_id) }}
+            </a-tag>
           </template>
           
           <!-- 操作列 -->
@@ -159,14 +142,12 @@
           
           <a-form-item label="角色" name="role_id">
             <a-select v-model:value="addForm.role_id" placeholder="请选择角色">
-              <a-select-option :value="1">
-                <a-tag color="volcano">超级管理员</a-tag>
-              </a-select-option>
-              <a-select-option :value="2">
-                <a-tag color="blue">管理员</a-tag>
-              </a-select-option>
-              <a-select-option :value="3">
-                <a-tag color="cyan">普通用户</a-tag>
+              <a-select-option 
+                v-for="role in [{id: 1, name: '超级管理员'}, {id: 2, name: '管理员'}, {id: 3, name: '普通用户'}]" 
+                :key="role.id" 
+                :value="role.id"
+              >
+                <a-tag :color="getRoleTagColor(role.id)">{{ role.name }}</a-tag>
               </a-select-option>
             </a-select>
           </a-form-item>
@@ -206,9 +187,13 @@
           
           <a-form-item label="角色" name="role_id">
             <a-select v-model:value="editForm.role_id" placeholder="请选择角色">
-              <a-select-option :value="1">超级管理员</a-select-option>
-              <a-select-option :value="2">管理员</a-select-option>
-              <a-select-option :value="3">普通用户</a-select-option>
+              <a-select-option 
+                v-for="role in [{id: 1, name: '超级管理员'}, {id: 2, name: '管理员'}, {id: 3, name: '普通用户'}]" 
+                :key="role.id" 
+                :value="role.id"
+              >
+                <a-tag :color="getRoleTagColor(role.id)">{{ role.name }}</a-tag>
+              </a-select-option>
             </a-select>
           </a-form-item>
         </a-form>
@@ -579,6 +564,34 @@ const handleAddSubmit = async () => {
 const handleAddCancel = () => {
   addFormRef.value?.resetFields()
   addModalVisible.value = false
+}
+
+// 获取角色文本
+const getRoleText = (roleId?: number) => {
+  switch (roleId) {
+    case 1:
+      return '超级管理员'
+    case 2:
+      return '管理员'
+    case 3:
+      return '普通用户'
+    default:
+      return '未知角色'
+  }
+}
+
+// 获取角色标签颜色
+const getRoleTagColor = (roleId?: number) => {
+  switch (roleId) {
+    case 1:
+      return 'volcano'  // 超级管理员使用火山红
+    case 2:
+      return 'blue'     // 管理员使用蓝色
+    case 3:
+      return 'green'    // 普通用户使用绿色
+    default:
+      return 'default'  // 默认灰色
+  }
 }
 
 onMounted(() => {

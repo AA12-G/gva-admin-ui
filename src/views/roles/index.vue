@@ -44,6 +44,15 @@
         row-key="id"
       >
         <template #bodyCell="{ column, record }">
+          <!-- 角色名称列 -->
+          <template v-if="column.key === 'name'">
+            <!-- 添加调试信息 -->
+            <!-- {{ console.log('角色信息:', record) }} -->
+            <a-tag :color="getRoleTagColor(record.code)">
+              {{ record.name }}
+            </a-tag>
+          </template>
+          
           <!-- 状态列 -->
           <template v-if="column.key === 'status'">
             <a-tag :color="record.status === 1 ? 'success' : 'error'">
@@ -369,6 +378,24 @@ const handleEditSubmit = async () => {
 const handleEditCancel = () => {
   editFormRef.value?.resetFields()
   editModalVisible.value = false
+}
+
+// 获取角色标签颜色
+const getRoleTagColor = (code: string) => {
+  switch (code?.toLowerCase()) {
+    case 'super_admin':
+    case 'superadmin':
+    case '1':
+      return 'volcano'
+    case 'admin':
+    case '2':
+      return 'blue'
+    case 'user':
+    case '3':
+      return 'green'
+    default:
+      return 'default'
+  }
 }
 
 // 初始化
