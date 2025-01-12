@@ -2,24 +2,43 @@
   <a-modal
     v-model:visible="visible"
     title="权限设置"
-    width="800px"
+    width="600px"
     :footer="null"
     @cancel="handleCancel"
   >
     <a-spin :spinning="loading">
       <div class="permission-container">
         <div class="role-info">
-          <h3>{{ currentRole?.name }}</h3>
-          <p class="role-description">{{ currentRole?.description || '暂无描述' }}</p>
+          <a-descriptions :column="1" size="small">
+            <a-descriptions-item label="角色名称">
+              <a-tag :color="getRoleTagColor(currentRole?.code)">
+                {{ currentRole?.name }}
+              </a-tag>
+            </a-descriptions-item>
+            <a-descriptions-item label="角色描述">
+              {{ currentRole?.description || '暂无描述' }}
+            </a-descriptions-item>
+          </a-descriptions>
         </div>
         
         <a-divider />
+        
+        <div class="search-box">
+          <a-input-search
+            v-model:value="searchText"
+            placeholder="搜索权限"
+            style="width: 100%"
+            @change="handleSearch"
+            allowClear
+          />
+        </div>
         
         <a-tree
           v-model:checkedKeys="checkedKeys"
           :treeData="permissionTree"
           checkable
           :defaultExpandAll="true"
+          :class="{ 'permission-tree': true }"
         >
           <template #title="{ title, type }">
             <span>
@@ -45,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { MenuOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/icons-vue'
 import { getRolePermissions } from '@/api/role'
@@ -67,6 +86,33 @@ const saveLoading = ref(false)
 const currentRole = ref<RoleInfo>()
 const checkedKeys = ref<string[]>([])
 const permissionTree = ref<any[]>([])
+
+// 搜索功能
+const searchText = ref('')
+
+// 处理搜索
+const handleSearch = () => {
+  // 这里可以实现搜索逻辑
+  console.log('搜索权限:', searchText.value)
+}
+
+// 获取角色标签颜色
+const getRoleTagColor = (code?: string) => {
+  switch (code?.toLowerCase()) {
+    case 'super_admin':
+    case 'superadmin':
+    case '1':
+      return 'volcano'
+    case 'admin':
+    case '2':
+      return 'blue'
+    case 'user':
+    case '3':
+      return 'green'
+    default:
+      return 'default'
+  }
+}
 
 // 监听visible变化
 watch(
@@ -140,21 +186,23 @@ const handleSave = async () => {
 
 <style scoped lang="less">
 .permission-container {
-  padding: 0 20px;
+  padding: 12px;
   
   .role-info {
-    text-align: center;
     margin-bottom: 20px;
-    
-    h3 {
-      margin-bottom: 8px;
-      color: #1890ff;
-    }
-    
-    .role-description {
-      color: #666;
-      font-size: 14px;
-    }
+  }
+  
+  .search-box {
+    margin-bottom: 16px;
+  }
+  
+  .permission-tree {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #fafafa;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid #f0f0f0;
   }
   
   .footer-btns {
@@ -164,10 +212,6 @@ const handleSave = async () => {
 }
 
 :deep(.ant-tree) {
-  background: #f5f5f5;
-  padding: 16px;
-  border-radius: 4px;
-  
   .ant-tree-node-content-wrapper {
     display: flex;
     align-items: center;
@@ -176,5 +220,14 @@ const handleSave = async () => {
       margin-right: 8px;
     }
   }
+}
+
+:deep(.ant-descriptions-item-label) {
+  color: #666;
+  width: 100px;
+}
+
+:deep(.ant-descriptions-item-content) {
+  color: #333;
 }
 </style> 
