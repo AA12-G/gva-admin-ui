@@ -111,6 +111,13 @@
         </template>
       </a-table>
     </a-card>
+
+    <!-- 权限设置对话框 -->
+    <permission-dialog
+      v-model:visible="permissionModalVisible"
+      :role="currentRole"
+      @success="handlePermissionSuccess"
+    />
   </div>
 
   <!-- 编辑角色对话框 -->
@@ -169,6 +176,7 @@ import {
 import dayjs from 'dayjs'
 import { getRoleList, deleteRole, getRoleById, updateRole } from '@/api/role'
 import type { FormInstance } from 'ant-design-vue'
+import PermissionDialog from './components/PermissionDialog.vue'
 
 const loading = ref(false)
 const roleList = ref<RoleInfo[]>([])
@@ -269,9 +277,20 @@ const handleTableChange = (pag: TablePaginationConfig) => {
   fetchRoleList()
 }
 
-// 权限设置
+// 权限设置相关
+const permissionModalVisible = ref(false)
+const currentRole = ref<RoleInfo>()
+
+// 打开权限设置对话框
 const handlePermissions = (record: RoleInfo) => {
-  message.info('权限设置功能开发中')
+  currentRole.value = record
+  permissionModalVisible.value = true
+}
+
+// 权限设置成功回调
+const handlePermissionSuccess = () => {
+  message.success('权限设置成功')
+  fetchRoleList() // 刷新角色列表
 }
 
 // 删除角色
